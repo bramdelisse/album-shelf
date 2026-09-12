@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>labelen — album shelf</title>
+    <style>
+      :root {
+        --paper: #fcfcfa;
+        --ink: #16181c;
+        --sunflower: #f2b705;
+        --marker: #ffd84d;
+        --rule: rgba(22, 24, 28, 0.14);
+        --soft: rgba(22, 24, 28, 0.55);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+      header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+      h1 { margin: 0; font-size: 1.6rem; font-weight: 600; letter-spacing: -0.01em; }
+      .marker {
+        background: linear-gradient(var(--marker), var(--marker)) no-repeat;
+        background-size: 100% 0.42em; background-position: 0 78%; padding: 0 0.1em;
+      }
+      .progress { color: var(--soft); font-size: 0.9rem; }
+
+      .tabs { display: flex; gap: 0.35rem; margin-top: 1.5rem; border-bottom: 1px solid var(--rule); }
+      .tab {
+        font: inherit; background: none; border: 0; cursor: pointer; color: var(--soft);
+        padding: 0.5rem 0.9rem; margin-bottom: -1px; border-bottom: 2px solid transparent;
+      }
+      .tab:hover { color: var(--ink); }
+      .tab.is-active { color: var(--ink); font-weight: 600; border-bottom-color: var(--sunflower); }
+
+      .cols { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 2rem; }
+      .left { flex: 1 1 17rem; min-width: 0; }
+      .right { flex: 1 1 19rem; min-width: 0; }
+
+      .cover-wrap { position: relative; width: 100%; max-width: 17rem; }
+      .cover {
+        width: 100%; aspect-ratio: 1; border-radius: 2px;
+        background: rgba(22, 24, 28, 0.05) center / cover no-repeat;
+      }
+      /* A gem is a sticker slapped on the corner, the same one the shelf shows. */
+      .gem-sticker {
+        display: none; position: absolute; top: -0.8rem; right: -0.9rem;
+        width: 3.9rem; height: auto; transform: rotate(14deg);
+        filter: drop-shadow(0 1px 2px rgba(22, 24, 28, 0.32)); pointer-events: none;
+      }
+      .gem-sticker.is-on { display: block; }
+
+      .artist { margin: 1rem 0 0.15rem; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--soft); }
+      .album { margin: 0; font-size: 1.35rem; font-weight: 600; line-height: 1.2; }
+      .year { margin: 0.2rem 0 0; color: var(--soft); font-size: 0.9rem; }
+      .stamp { font-size: 0.8rem; color: var(--soft); margin: 0.3rem 0 0; }
+      .listen { display: inline-block; margin-top: 0.8rem; font-size: 0.9rem; color: var(--ink); }
+      .listen:hover { background: linear-gradient(var(--marker), var(--marker)) no-repeat; background-size: 100% 0.4em; background-position: 0 82%; }
+
+      label { display: block; font-size: 0.78rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--soft); margin-bottom: 0.35rem; }
+      .field { margin-bottom: 1.4rem; }
+      .row { display: flex; align-items: center; gap: 0.75rem; }
+      input[type='number'], input[type='text'] {
+        font: inherit; padding: 0.4rem 0.55rem; border: 1px solid var(--rule);
+        border-radius: 2px; background: #fff; color: inherit; width: 5.5rem;
+      }
+      input[type='text'] { width: 7.5rem; font-variant-numeric: tabular-nums; }
+      input:focus-visible { outline: 2px solid var(--marker); outline-offset: 1px; border-color: var(--sunflower); }
+      input[type='range'] { flex: 1; accent-color: var(--sunflower); min-width: 0; }
+      input[type='color'] {
+        width: 3.2rem; height: 2.3rem; padding: 2px; border: 1px solid var(--rule);
+        border-radius: 2px; background: #fff; cursor: pointer;
+      }
+      .ends { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.72rem; color: var(--soft); margin-top: 0.3rem; }
+
+      .suggest { display: flex; align-items: center; gap: 0.5rem; margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--soft); }
+      .swatches { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.6rem; }
+      .swatch { width: 1.35rem; height: 1.35rem; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22); padding: 0; }
+      .swatch:hover, .swatch:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+
+      .plane { position: relative; width: 100%; max-width: 15rem; aspect-ratio: 1; border: 1px solid var(--rule); background: #fff; margin-top: 0.35rem; }
+      .plane::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background:
+          linear-gradient(var(--rule), var(--rule)) no-repeat 50% 0 / 1px 100%,
+          linear-gradient(var(--rule), var(--rule)) no-repeat 0 50% / 100% 1px;
+      }
+      .pin { position: absolute; width: 0.6rem; height: 0.6rem; margin: 0 0 -0.3rem -0.3rem; border-radius: 50%; opacity: 0.28; }
+      .pin.now { width: 1.15rem; height: 1.15rem; margin: 0 0 -0.575rem -0.575rem; opacity: 1; box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.25), 0 0 0 3px var(--marker); z-index: 2; }
+
+      .actions { display: flex; gap: 0.6rem; align-items: center; margin-top: 1.8rem; flex-wrap: wrap; }
+      button { font: inherit; border-radius: 2px; cursor: pointer; }
+      .primary { background: var(--ink); color: var(--paper); border: 1px solid var(--ink); padding: 0.5rem 1.1rem; font-weight: 600; }
+      .primary:hover { background: #000; }
+      .ghost { background: transparent; color: var(--soft); border: 1px solid var(--rule); padding: 0.5rem 0.9rem; }
+      .ghost:hover { color: var(--ink); }
+      /* Set apart from the routine buttons — this one is permanent. */
+      .drop { margin-left: 1.5rem; }
+      .gem {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        background: transparent; color: var(--soft);
+        border: 1px solid var(--rule); padding: 0.45rem 0.9rem;
+      }
+      .gem .stone { font-size: 0.95rem; line-height: 1; color: var(--rule); }
+      .gem:hover { color: var(--ink); }
+      .gem[aria-pressed='true'] { color: var(--ink); border-color: #7fa3bd; }
+      .gem[aria-pressed='true'] .stone { color: #3f6b86; }
+
+      .hint { font-size: 0.82rem; color: var(--soft); margin-top: 0.9rem; }
+      kbd { font: inherit; font-size: 0.78rem; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 3px; padding: 0 0.3em; }
+
+      .opts { margin-top: 2.5rem; font-size: 0.85rem; color: var(--soft); display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+      .opts label { display: inline; text-transform: none; letter-spacing: 0; font-size: inherit; margin: 0; }
+      .done { text-align: center; padding: 4rem 1rem; }
+      .error { color: #a02216; font-size: 0.85rem; margin-top: 0.8rem; min-height: 1.2em; }
+
+      #unsave { margin-top: 2rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
+      .unsave-title { font-size: 0.78rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--soft); margin: 0 0 0.5rem; }
+      #unsaveList { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; }
+      #unsaveList li { margin-bottom: 0.2rem; }
+      #unsaveList a { color: var(--ink); }
+
+      /* ---------------------------- schikken ---------------------------- */
+      .arrange { display: flex; gap: 2.5rem; flex-wrap: wrap; margin-top: 2rem; align-items: flex-start; }
+      .arrange-main { flex: 1 1 26rem; min-width: 0; display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.5rem; }
+      .axis-y-label {
+        grid-row: 1; writing-mode: vertical-rl; transform: rotate(180deg);
+        justify-self: center; align-self: center;
+      }
+      .axis-y-label, .axis-x-label {
+        font-size: 0.78rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--soft);
+      }
+      .plane-rows { display: grid; gap: 0.4rem; }
+      .tick { font-size: 0.72rem; letter-spacing: 0.04em; color: var(--soft); }
+      .axis-x { grid-column: 2; display: flex; justify-content: space-between; align-items: baseline; gap: 0.75rem; margin-top: 0.2rem; }
+
+      .big-plane {
+        position: relative; width: 100%; aspect-ratio: 1;
+        border: 1px solid var(--rule); background: #fff; touch-action: none;
+      }
+      .big-plane::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background:
+          linear-gradient(var(--rule), var(--rule)) no-repeat 50% 0 / 1px 100%,
+          linear-gradient(var(--rule), var(--rule)) no-repeat 0 50% / 100% 1px;
+      }
+      .adot {
+        position: absolute; border-radius: 50%; cursor: grab; touch-action: none;
+        box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22);
+      }
+      .adot:hover, .adot.is-sel { box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.3), 0 0 0 3px var(--marker); z-index: 3; }
+      .adot.is-drag { cursor: grabbing; z-index: 4; }
+
+      .arrange-side { flex: 0 1 14rem; }
+      .legend { font-size: 0.82rem; color: var(--soft); margin: 0 0 1.5rem; }
+      .sel-cover { width: 100%; max-width: 10rem; aspect-ratio: 1; border-radius: 2px; background: rgba(22, 24, 28, 0.05) center / cover no-repeat; margin-bottom: 0.8rem; }
+      .arrange-empty { color: var(--soft); font-size: 0.9rem; }
+
+      @media (max-width: 640px) {
+        .ends { font-size: 0.68rem; }
+        .axis-x-label { display: none; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <header>
+        <h1><span class="marker" id="title">labelen</span></h1>
+        <span class="progress" id="progress"></span>
+      </header>
+
+      <nav class="tabs">
+        <button class="tab is-active" data-view="label" type="button">labelen</button>
+        <button class="tab" data-view="arrange" type="button">schikken</button>
+      </nav>
+
+      <!-- ============================= labelen ============================= -->
+      <section id="viewLabel">
+        <div id="stage"></div>
+
+        <div class="cols" id="card" hidden>
+          <div class="left">
+            <div class="cover-wrap">
+              <div class="cover" id="cover"></div>
+              <svg class="gem-sticker" id="gemSticker" viewBox="0 0 56 44" aria-hidden="true">
+                <path d="M4 16 L15 4 L41 4 L52 16 L28 40 Z" fill="#cfe3ef"
+                      stroke="#fcfcfa" stroke-width="4.5" stroke-linejoin="round" paint-order="stroke" />
+                <path d="M4 16 L15 4 L20 16 Z" fill="#eaf4fa" />
+                <path d="M36 16 L41 4 L52 16 Z" fill="#eaf4fa" />
+                <path d="M4 16 L15 4 L41 4 L52 16 L28 40 Z" fill="none"
+                      stroke="#3f6b86" stroke-width="1.4" stroke-linejoin="round" />
+                <path d="M4 16 H52 M15 4 L20 16 M41 4 L36 16 M20 16 L28 40 M36 16 L28 40"
+                      fill="none" stroke="#3f6b86" stroke-opacity="0.5" stroke-width="1.1" stroke-linecap="round" />
+              </svg>
+            </div>
+            <p class="artist" id="artist"></p>
+            <p class="album" id="album"></p>
+            <p class="year" id="year"></p>
+            <p class="stamp" id="stamp"></p>
+            <a class="listen" id="listen" target="_blank" rel="noopener">Luisteren op Spotify →</a>
+          </div>
+
+          <div class="right">
+            <div class="field">
+              <label for="energy">energie</label>
+              <div class="row">
+                <input type="number" id="energy" min="0" max="100" step="1" />
+                <input type="range" id="energyRange" min="0" max="100" step="1" />
+              </div>
+              <div class="ends"><span>brengt je in slaap</span><span>brengt je naar de maan</span></div>
+            </div>
+
+            <div class="field">
+              <label for="attention">aandacht</label>
+              <div class="row">
+                <input type="number" id="attention" min="0" max="100" step="1" />
+                <input type="range" id="attentionRange" min="0" max="100" step="1" />
+              </div>
+              <div class="ends"><span>achtergrond</span><span>eist alle aandacht</span></div>
+            </div>
+
+            <div class="field">
+              <label for="colour">colour</label>
+              <div class="row">
+                <input type="color" id="colour" />
+                <input type="text" id="hex" spellcheck="false" />
+              </div>
+              <p class="suggest" id="suggest" hidden>
+                <button class="swatch" id="coverSwatch" type="button"></button>
+                <span>uit de hoes</span>
+              </p>
+              <div class="swatches" id="swatches"></div>
+            </div>
+
+            <div class="field">
+              <label>gem</label>
+              <button type="button" class="gem" id="gem" aria-pressed="false">
+                <span class="stone">◆</span> <span id="gemText">markeer als gem</span>
+              </button>
+            </div>
+
+            <div class="field">
+              <label>waar het komt te staan</label>
+              <div class="plane" id="plane"></div>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="save">Opslaan → volgende</button>
+              <button class="ghost" id="skip">Overslaan</button>
+              <button class="ghost" id="back">Vorige</button>
+              <button class="ghost drop" id="drop" title="Komt niet meer terug in de labellijst">
+                Niet labelen
+              </button>
+            </div>
+            <p class="hint">
+              <kbd>Enter</kbd> slaat op en gaat door. <kbd>Esc</kbd> slaat over tot de volgende keer.
+              <em>Niet labelen</em> haalt het album permanent uit de lijst.
+            </p>
+            <p class="error" id="error"></p>
+          </div>
+        </div>
+
+        <div class="opts">
+          <span><input type="checkbox" id="showAll" /> <label for="showAll">ook al gelabelde albums tonen</label></span>
+          <span id="saved"></span>
+        </div>
+
+        <section id="unsave" hidden>
+          <p class="unsave-title">Nog uit Spotify te verwijderen</p>
+          <ul id="unsaveList"></ul>
+        </section>
+      </section>
+
+      <!-- ============================ schikken ============================ -->
+      <section id="viewArrange" hidden>
+        <div class="arrange">
+          <div class="arrange-main">
+            <span class="axis-y-label">aandacht</span>
+            <div class="plane-rows">
+              <span class="tick">eist alle aandacht</span>
+              <div class="big-plane" id="bigPlane"></div>
+              <span class="tick">achtergrond</span>
+            </div>
+            <div class="axis-x">
+              <span class="tick">brengt je in slaap</span>
+              <span class="axis-x-label">energie</span>
+              <span class="tick">brengt je naar de maan</span>
+            </div>
+          </div>
+
+          <aside class="arrange-side">
+            <p class="legend">
+              Hoe groter en steviger de stip, hoe langer geleden je dat album beoordeeld hebt.
+              Sleep hem naar de goede plek — dat slaat meteen op, en de stip wordt weer klein.
+            </p>
+            <div id="selBox"><p class="arrange-empty">Wijs een stip aan.</p></div>
+            <p class="error" id="arrangeError"></p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let albums = [];
+      let byId = {};
+      let labels = {};
+      let dates = {};
+      let skipped = new Set();
+      let queue = [];
+      let i = 0;
+      let lastColour = '#7a4e8c';
+
+      const clamp = (n) => Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
+
+      async function load() {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        albums = data.albums;
+        byId = Object.fromEntries(albums.map((a) => [a.id, a]));
+        labels = data.labels;
+        dates = data.dates || {};
+        skipped = new Set(data.skipped || []);
+        const used = Object.values(labels).map((l) => l.colour);
+        if (used.length) lastColour = used[used.length - 1];
+        buildQueue();
+      }
+
+      /* --------------------------- shared saving --------------------------- */
+
+      async function postLabel(body) {
+        const res = await fetch('/api/label', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const out = await res.json();
+        if (!res.ok) throw new Error(out.error || 'opslaan mislukt');
+        labels[body.id] = { energy: body.energy, attention: body.attention, colour: body.colour };
+        if (body.gem) labels[body.id].gem = true;
+        dates[body.id] = out.labelled;
+        return out;
+      }
+
+      function updateProgress() {
+        $('progress').textContent = `${Object.keys(labels).length} van ${albums.length} gelabeld`;
+      }
+
+      /* ------------------------------ labelen ------------------------------ */
+
+      function buildQueue() {
+        const live = albums.filter((a) => !skipped.has(a.id));
+        queue = $('showAll').checked ? live : live.filter((a) => !labels[a.id]);
+        i = 0;
+        render();
+      }
+
+      function drawPlane(current) {
+        const plane = $('plane');
+        plane.innerHTML = '';
+        for (const [id, l] of Object.entries(labels)) {
+          if (current && id === current.id) continue;
+          const pin = document.createElement('span');
+          pin.className = 'pin';
+          pin.style.left = l.energy + '%';
+          pin.style.bottom = l.attention + '%';
+          pin.style.background = l.colour;
+          plane.append(pin);
+        }
+        if (current) {
+          const now = document.createElement('span');
+          now.className = 'pin now';
+          now.style.left = clamp($('energy').value) + '%';
+          now.style.bottom = clamp($('attention').value) + '%';
+          now.style.background = $('colour').value;
+          plane.append(now);
+        }
+      }
+
+      function drawSwatches() {
+        const seen = [];
+        for (const l of Object.values(labels)) if (!seen.includes(l.colour)) seen.push(l.colour);
+        $('swatches').innerHTML = '';
+        for (const c of seen.slice(-14).reverse()) {
+          const b = document.createElement('button');
+          b.className = 'swatch';
+          b.type = 'button';
+          b.style.background = c;
+          b.title = c;
+          b.onclick = () => setColour(c);
+          $('swatches').append(b);
+        }
+      }
+
+      function setGem(on) {
+        $('gem').setAttribute('aria-pressed', on ? 'true' : 'false');
+        $('gemText').textContent = on ? 'gem' : 'markeer als gem';
+        $('gemSticker').classList.toggle('is-on', on); // SVG has no .hidden
+      }
+      const isGem = () => $('gem').getAttribute('aria-pressed') === 'true';
+
+      function setColour(c) {
+        $('colour').value = c;
+        $('hex').value = c;
+        drawPlane(queue[i]);
+      }
+
+      function render() {
+        updateProgress();
+
+        if (i >= queue.length) {
+          $('card').hidden = true;
+          $('stage').innerHTML = queue.length
+            ? '<div class="done"><p>Klaar met deze ronde.</p></div>'
+            : '<div class="done"><p>Niets meer te labelen. Vink hieronder aan om ook gelabelde albums te tonen.</p></div>';
+          return;
+        }
+
+        $('stage').innerHTML = '';
+        $('card').hidden = false;
+
+        const a = queue[i];
+        const existing = labels[a.id];
+
+        $('cover').style.backgroundImage = a.cover ? `url("${a.cover}")` : 'none';
+        $('cover').style.backgroundColor = existing ? existing.colour : 'rgba(22,24,28,0.05)';
+        $('artist').textContent = a.artist;
+        $('album').textContent = a.album;
+        $('year').textContent = a.year || '';
+        $('listen').href = a.url || '#';
+        $('listen').style.display = a.url ? '' : 'none';
+        $('stamp').textContent = dates[a.id] ? `laatst gelabeld ${dates[a.id]}` : '';
+
+        const e = existing ? existing.energy : 50;
+        const p = existing ? existing.attention : 50;
+        $('energy').value = e;
+        $('energyRange').value = e;
+        $('attention').value = p;
+        $('attentionRange').value = p;
+        // The colour is nearly always the one on the sleeve, so start there and
+        // let it be corrected, rather than making it a decision every time.
+        const suggested = a.coverColour || null;
+        $('suggest').hidden = !suggested;
+        if (suggested) {
+          $('coverSwatch').style.background = suggested;
+          $('coverSwatch').title = suggested;
+          $('coverSwatch').onclick = () => setColour(suggested);
+        }
+        setColour(existing ? existing.colour : suggested || lastColour);
+        setGem(Boolean(existing && existing.gem));
+
+        drawSwatches();
+        drawPlane(a);
+        $('error').textContent = '';
+        $('energy').focus();
+        $('energy').select();
+      }
+
+      async function save() {
+        const a = queue[i];
+        if (!a) return;
+        $('save').disabled = true;
+        try {
+          await postLabel({
+            id: a.id,
+            energy: clamp($('energy').value),
+            attention: clamp($('attention').value),
+            colour: $('colour').value.toLowerCase(),
+            gem: isGem(),
+          });
+          lastColour = $('colour').value.toLowerCase();
+          $('saved').textContent = `laatst opgeslagen: ${a.album}`;
+          i++;
+          render();
+        } catch (err) {
+          $('error').textContent = err.message;
+        } finally {
+          $('save').disabled = false;
+        }
+      }
+
+      async function drop() {
+        const a = queue[i];
+        if (!a) return;
+        $('drop').disabled = true;
+        try {
+          const res = await fetch('/api/skip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: a.id }),
+          });
+          const out = await res.json();
+          if (!res.ok) throw new Error(out.error || 'overslaan mislukt');
+          skipped.add(a.id);
+          delete labels[a.id];
+
+          // Remind me to unsave it in Spotify — that is what makes it disappear
+          // from the catalogue on the next import.
+          const li = document.createElement('li');
+          if (a.url) {
+            const link = document.createElement('a');
+            link.href = a.url;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = `${a.artist} — ${a.album}`;
+            li.append(link);
+          } else {
+            li.textContent = `${a.artist} — ${a.album}`;
+          }
+          $('unsaveList').append(li);
+          $('unsave').hidden = false;
+
+          queue.splice(i, 1);
+          render();
+        } catch (err) {
+          $('error').textContent = err.message;
+        } finally {
+          $('drop').disabled = false;
+        }
+      }
+
+      for (const [num, range] of [['energy', 'energyRange'], ['attention', 'attentionRange']]) {
+        $(num).addEventListener('input', () => {
+          $(range).value = clamp($(num).value);
+          drawPlane(queue[i]);
+        });
+        $(range).addEventListener('input', () => {
+          $(num).value = $(range).value;
+          drawPlane(queue[i]);
+        });
+      }
+
+      $('colour').addEventListener('input', () => setColour($('colour').value));
+      $('hex').addEventListener('change', () => {
+        const v = $('hex').value.trim();
+        if (/^#[0-9a-f]{6}$/i.test(v)) setColour(v.toLowerCase());
+        else $('hex').value = $('colour').value;
+      });
+
+      $('gem').onclick = () => setGem(!isGem());
+      $('save').onclick = save;
+      $('drop').onclick = drop;
+      $('skip').onclick = () => { i++; render(); };
+      $('back').onclick = () => { i = Math.max(0, i - 1); render(); };
+      $('showAll').onchange = buildQueue;
+
+      /* ------------------------------ schikken ------------------------------ */
+
+      const DAY = 86400000;
+      const STALE = 180; // days at which a dot reaches full presence
+
+      function ageDays(id) {
+        const t = Date.parse(dates[id] ?? '');
+        if (Number.isNaN(t)) return STALE; // never dated: treat as fully stale
+        return Math.max(0, (Date.now() - t) / DAY);
+      }
+
+      // Older judgements get more presence, so the plane shows what wants a second look.
+      function presence(id) {
+        const a = Math.min(ageDays(id), STALE) / STALE;
+        return { size: 10 + a * 13, opacity: 0.45 + a * 0.55 };
+      }
+
+      function styleDot(dot, id, l) {
+        const { size, opacity } = presence(id);
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.margin = `0 0 ${-size / 2}px ${-size / 2}px`;
+        dot.style.opacity = opacity;
+        dot.style.left = l.energy + '%';
+        dot.style.bottom = l.attention + '%';
+        dot.style.background = l.colour;
+      }
+
+      function drawArrange() {
+        const plane = $('bigPlane');
+        plane.innerHTML = '';
+        for (const [id, l] of Object.entries(labels)) {
+          const a = byId[id];
+          if (!a) continue;
+          const dot = document.createElement('div');
+          dot.className = 'adot';
+          dot.dataset.id = id;
+          dot.title = `${a.artist} — ${a.album}`;
+          styleDot(dot, id, l);
+          plane.append(dot);
+        }
+      }
+
+      function showSelected(id) {
+        const a = byId[id];
+        const l = labels[id];
+        if (!a || !l) return;
+        $('selBox').innerHTML = '';
+
+        const cover = document.createElement('div');
+        cover.className = 'sel-cover';
+        if (a.cover) cover.style.backgroundImage = `url("${a.cover}")`;
+        cover.style.backgroundColor = l.colour;
+
+        const artist = document.createElement('p');
+        artist.className = 'artist';
+        artist.style.marginTop = '0';
+        artist.textContent = a.artist;
+
+        const album = document.createElement('p');
+        album.className = 'album';
+        album.textContent = a.album;
+
+        const meta = document.createElement('p');
+        meta.className = 'stamp';
+        meta.textContent =
+          `energie ${l.energy} · aandacht ${l.attention}` +
+          (dates[id] ? ` · ${dates[id]}` : ' · nog niet gedateerd');
+
+        const open = document.createElement('button');
+        open.className = 'ghost';
+        open.type = 'button';
+        open.style.marginTop = '0.9rem';
+        open.textContent = 'Open in labelen';
+        open.onclick = () => {
+          $('showAll').checked = true;
+          buildQueue();
+          const at = queue.findIndex((x) => x.id === id);
+          if (at >= 0) { i = at; render(); }
+          switchView('label');
+        };
+
+        $('selBox').append(cover, artist, album, meta, open);
+      }
+
+      let drag = null;
+
+      $('bigPlane').addEventListener('pointerdown', (ev) => {
+        const dot = ev.target.closest('.adot');
+        if (!dot) return;
+        ev.preventDefault();
+        drag = { dot, id: dot.dataset.id, rect: $('bigPlane').getBoundingClientRect(), moved: false };
+        dot.setPointerCapture(ev.pointerId);
+        dot.classList.add('is-drag', 'is-sel');
+        for (const other of $('bigPlane').children) if (other !== dot) other.classList.remove('is-sel');
+        showSelected(drag.id);
+      });
+
+      $('bigPlane').addEventListener('pointermove', (ev) => {
+        if (!drag) return;
+        drag.energy = clamp(((ev.clientX - drag.rect.left) / drag.rect.width) * 100);
+        drag.attention = clamp((1 - (ev.clientY - drag.rect.top) / drag.rect.height) * 100);
+        drag.moved = true;
+        drag.dot.style.left = drag.energy + '%';
+        drag.dot.style.bottom = drag.attention + '%';
+      });
+
+      async function endDrag(ev) {
+        if (!drag) return;
+        const d = drag;
+        drag = null;
+        d.dot.classList.remove('is-drag');
+        try { d.dot.releasePointerCapture(ev.pointerId); } catch (err) { /* already gone */ }
+        if (!d.moved) return; // a plain click only selects
+
+        const before = labels[d.id];
+        try {
+          await postLabel({
+            id: d.id,
+            energy: d.energy,
+            attention: d.attention,
+            colour: before.colour,
+            gem: Boolean(before.gem),
+          });
+          styleDot(d.dot, d.id, labels[d.id]); // freshly judged, so it recedes
+          showSelected(d.id);
+          updateProgress();
+          $('arrangeError').textContent = '';
+        } catch (err) {
+          $('arrangeError').textContent = err.message;
+          styleDot(d.dot, d.id, before); // put it back where it was
+        }
+      }
+
+      $('bigPlane').addEventListener('pointerup', endDrag);
+      $('bigPlane').addEventListener('pointercancel', endDrag);
+
+      /* -------------------------------- tabs -------------------------------- */
+
+      function switchView(name) {
+        for (const tab of document.querySelectorAll('.tab')) {
+          tab.classList.toggle('is-active', tab.dataset.view === name);
+        }
+        $('viewLabel').hidden = name !== 'label';
+        $('viewArrange').hidden = name !== 'arrange';
+        $('title').textContent = name === 'label' ? 'labelen' : 'schikken';
+        if (name === 'arrange') drawArrange();
+      }
+
+      for (const tab of document.querySelectorAll('.tab')) {
+        tab.onclick = () => switchView(tab.dataset.view);
+      }
+
+      document.addEventListener('keydown', (ev) => {
+        if ($('viewLabel').hidden) return; // schikken is mouse work
+        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); save(); }
+        if (ev.key === 'Escape') { ev.preventDefault(); i++; render(); }
+      });
+
+      load();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "album-shelf",
+  "type": "module",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "A personal album shelf: your saved albums plotted on two axes you label by hand.",
+  "scripts": {
+    "import": "node scripts/import-albums.mjs",
+    "colours": "node scripts/colours.mjs",
+    "label": "node scripts/label-server.mjs",
+    "sync": "node scripts/sync-labels.mjs",
+    "predev": "npm run sync",
+    "prebuild": "npm run sync",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "devDependencies": {
+    "astro": "^5.18.2",
+    "sharp": "^0.34.5"
+  }
+}

@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+
+# local configuration — never committed
+.env
+
+# Spotify refresh token, written by `npm run import`.
+# This is a credential. It must never reach the public repo.
+.spotify-token.json

@@ -1,0 +1,401 @@
+---
+import catalogue from '../../data/albums.json';
+import labels from '../data/labels.json';
+
+const albums = catalogue
+  .filter((a) => labels[a.id])
+  .map((a) => ({ ...a, ...labels[a.id] }));
+
+const unlabelled = catalogue.length - albums.length;
+const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
+---
+
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>albums — bram delisse</title>
+    <meta
+      name="description"
+      content="Mijn albums, geplaatst op energie en aandacht. Wijs een plek aan."
+    />
+    <meta name="theme-color" content="#FCFCFA" />
+  </head>
+
+  <body>
+    <main>
+      <header>
+        <h1><span class="marker">albums</span></h1>
+        <p class="lede">
+          Elk album staat op zijn eigen plek. Wijs er een aan en kijk wat daar staat.
+        </p>
+      </header>
+
+      <div class="layout">
+        <div class="plane-wrap">
+          <span class="axis-y-label">aandacht</span>
+
+          <div class="plane-rows">
+            <span class="tick top">eist alle aandacht</span>
+
+            <div class="plane" id="plane">
+              <div class="crosshair"></div>
+              {
+                albums.map((a) => (
+                  <a
+                    class="dot"
+                    href={a.url || '#'}
+                    target="_blank"
+                    rel="noopener"
+                    style={`left:${a.energy}%;bottom:${a.attention}%;--dot:${a.colour}`}
+                    data-artist={a.artist}
+                    data-album={a.album}
+                    data-year={a.year}
+                    data-cover={a.cover}
+                    data-gem={a.gem ? '1' : ''}
+                    aria-label={`${a.artist} — ${a.album}`}
+                  />
+                ))
+              }
+            </div>
+
+            <span class="tick bottom">achtergrond</span>
+          </div>
+
+          <div class="axis-x">
+            <span class="tick">brengt je in slaap</span>
+            <span class="axis-x-label">energie</span>
+            <span class="tick">brengt je naar de maan</span>
+          </div>
+        </div>
+
+        <aside id="panel" class="panel is-empty">
+          <div class="cover-wrap">
+            <div class="cover" id="cover"></div>
+            <svg class="gem-sticker" id="gemSticker" viewBox="0 0 56 44" aria-hidden="true">
+              <path
+                d="M4 16 L15 4 L41 4 L52 16 L28 40 Z"
+                fill="#cfe3ef"
+                stroke="#fcfcfa"
+                stroke-width="4.5"
+                stroke-linejoin="round"
+                paint-order="stroke"
+              />
+              <path d="M4 16 L15 4 L20 16 Z" fill="#eaf4fa" />
+              <path d="M36 16 L41 4 L52 16 Z" fill="#eaf4fa" />
+              <path
+                d="M4 16 L15 4 L41 4 L52 16 L28 40 Z"
+                fill="none"
+                stroke="#3f6b86"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 16 H52 M15 4 L20 16 M41 4 L36 16 M20 16 L28 40 M36 16 L28 40"
+                fill="none"
+                stroke="#3f6b86"
+                stroke-opacity="0.5"
+                stroke-width="1.1"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <p class="artist" id="artist">—</p>
+          <p class="album" id="album">Wijs een stip aan.</p>
+          <p class="year" id="year"></p>
+          <p class="hint">Klikken opent het album in Spotify.</p>
+        </aside>
+      </div>
+
+      <footer>
+        <p>
+          {albums.length} gelabeld{unlabelled > 0 && <> · {unlabelled} nog niet</>}
+          {isSample && <> · <em>voorbeelddata</em></>}
+        </p>
+      </footer>
+    </main>
+
+    <script is:inline>
+      const panel = document.getElementById('panel');
+      const fields = {
+        artist: document.getElementById('artist'),
+        album: document.getElementById('album'),
+        year: document.getElementById('year'),
+        cover: document.getElementById('cover'),
+      };
+
+      function show(dot) {
+        panel.classList.remove('is-empty');
+        fields.artist.textContent = dot.dataset.artist;
+        fields.album.textContent = dot.dataset.album;
+        fields.year.textContent = dot.dataset.year || '';
+        fields.cover.style.backgroundImage = dot.dataset.cover
+          ? `url("${dot.dataset.cover}")`
+          : 'none';
+        fields.cover.style.backgroundColor = getComputedStyle(dot).getPropertyValue('--dot');
+        // A gem is only visible once you open the album, never on the plane.
+        // classList, not .hidden: SVG elements have no hidden property.
+        document.getElementById('gemSticker').classList.toggle('is-on', dot.dataset.gem === '1');
+      }
+
+      for (const dot of document.querySelectorAll('.dot')) {
+        dot.addEventListener('pointerenter', () => show(dot));
+        dot.addEventListener('focus', () => show(dot));
+      }
+    </script>
+
+    <style>
+      :root {
+        --paper: #fcfcfa;
+        --ink: #16181c;
+        --sunflower: #f2b705;
+        --marker: #ffd84d;
+        --rule: rgba(22, 24, 28, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+
+      main {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 3rem 1.25rem 4rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 6vw, 2.75rem);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      /* Yellow is the trace of a hand: never text, never background. */
+      .marker {
+        background: linear-gradient(var(--marker), var(--marker)) no-repeat;
+        background-size: 100% 0.42em;
+        background-position: 0 78%;
+        padding: 0 0.1em;
+      }
+
+      .lede {
+        margin: 0.75rem 0 0;
+        max-width: 40ch;
+        color: rgba(22, 24, 28, 0.72);
+      }
+
+      .layout {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2.5rem;
+        align-items: flex-start;
+        margin-top: 2.5rem;
+      }
+
+      .plane-wrap {
+        flex: 1 1 22rem;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 1.4rem 1fr;
+        gap: 0.5rem;
+      }
+
+      .axis-y-label {
+        grid-row: 1;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        justify-self: center;
+        align-self: center;
+      }
+
+      .axis-y-label,
+      .axis-x-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: rgba(22, 24, 28, 0.62);
+      }
+
+      .plane-rows {
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .tick {
+        font-size: 0.72rem;
+        letter-spacing: 0.06em;
+        color: rgba(22, 24, 28, 0.5);
+      }
+
+      .tick.top,
+      .tick.bottom {
+        justify-self: start;
+      }
+
+      .plane {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1;
+        border: 1px solid var(--rule);
+        border-radius: 2px;
+        background: #fff;
+      }
+
+      .crosshair {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(var(--rule), var(--rule)) no-repeat 50% 0 / 1px 100%,
+          linear-gradient(var(--rule), var(--rule)) no-repeat 0 50% / 100% 1px;
+        pointer-events: none;
+      }
+
+      .axis-x {
+        grid-column: 2;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-top: 0.15rem;
+      }
+
+      .dot {
+        position: absolute;
+        width: 1.15rem;
+        height: 1.15rem;
+        margin: 0 0 -0.575rem -0.575rem;
+        border-radius: 50%;
+        background: var(--dot);
+        /* A ring, so a near-white colour is still a dot and not a hole. */
+        box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22);
+        transition: transform 0.12s ease;
+      }
+
+      .dot:hover,
+      .dot:focus-visible {
+        transform: scale(1.5);
+        outline: none;
+        box-shadow:
+          inset 0 0 0 1px rgba(22, 24, 28, 0.3),
+          0 0 0 3px var(--marker);
+        z-index: 2;
+      }
+
+      .panel {
+        flex: 0 1 15rem;
+        /* Neutral, so that on this page yellow means exactly one thing: a gem. */
+        border-top: 1px solid var(--rule);
+        padding-top: 1rem;
+      }
+
+      .cover {
+        width: 100%;
+        aspect-ratio: 1;
+        background: rgba(22, 24, 28, 0.05) center / cover no-repeat;
+        border-radius: 2px;
+      }
+
+      .cover-wrap {
+        position: relative;
+        width: 100%;
+        max-width: 13rem;
+        margin-bottom: 0.9rem;
+      }
+
+      /* One of the gems — a sticker stuck on the corner, not a frame.
+         Only here: the plane stays about colour and position, nothing else. */
+      .gem-sticker {
+        display: none;
+        position: absolute;
+        top: -0.75rem;
+        right: -0.9rem;
+        width: 3.6rem;
+        height: auto;
+        transform: rotate(14deg);
+        filter: drop-shadow(0 1px 2px rgba(22, 24, 28, 0.3));
+        pointer-events: none;
+      }
+      .gem-sticker.is-on {
+        display: block;
+      }
+
+      .panel p {
+        margin: 0 0 0.2rem;
+      }
+
+      .artist {
+        font-size: 0.82rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: rgba(22, 24, 28, 0.62);
+      }
+
+      .album {
+        font-size: 1.15rem;
+        font-weight: 600;
+        line-height: 1.25;
+      }
+
+      .year,
+      .hint {
+        font-size: 0.82rem;
+        color: rgba(22, 24, 28, 0.5);
+      }
+
+      .hint {
+        margin-top: 0.9rem;
+      }
+
+      .is-empty .cover,
+      .is-empty .artist,
+      .is-empty .hint {
+        opacity: 0.35;
+      }
+
+      footer {
+        margin-top: 3rem;
+        font-size: 0.82rem;
+        color: rgba(22, 24, 28, 0.5);
+      }
+
+      @media (max-width: 640px) {
+        main {
+          padding-top: 2rem;
+        }
+        /* The axis ends say it well enough on their own down here. */
+        .axis-x-label {
+          display: none;
+        }
+        .tick {
+          font-size: 0.68rem;
+        }
+        .layout {
+          gap: 1.75rem;
+        }
+        .panel {
+          flex-basis: 100%;
+          display: grid;
+          grid-template-columns: 5rem 1fr;
+          gap: 0 1rem;
+          align-items: start;
+        }
+        .cover-wrap {
+          grid-row: 1 / span 4;
+          margin-bottom: 0;
+        }
+        .gem-sticker {
+          width: 2.7rem;
+          top: -0.55rem;
+          right: -0.65rem;
+        }
+      }
+    </style>
+  </body>
+</html>
