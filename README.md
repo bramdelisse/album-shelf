@@ -11,10 +11,11 @@ You point at a region — low energy, background — and the albums are there.
 
 | Label | Range | What it is |
 | --- | --- | --- |
-| **energy** | 0–100 | Low to high. |
-| **attention** | 0–100 | Background, up to demanding all of it. |
+| **energy** | 0–100 | From *brengt je in slaap* to *brengt je naar de maan*. |
+| **attention** | 0–100 | From *je vergeet dat het aanstaat* up to *eist alle aandacht*. |
 | **colour** | any hex | How it feels. No palette, no list — a free choice, suggested from the cover. |
 | **gem** | `x` or blank | One of the twenty-odd albums that really matter. |
+| **review** | one sentence | Optional. Shown under the album, the way a note under a record sleeve reads. |
 | **labelled** | date | When the judgement was last made. |
 
 A gem is deliberately invisible on the plane — the overview stays about colour and
@@ -166,11 +167,39 @@ skipped with a message naming the album, rather than breaking the build.
 
 ## Deploying
 
-Cloudflare Pages, connected to this repo. Build command `npm run build`, output
-directory `dist`, Node 22 (read from `.nvmrc`). Do **not** set `ALBUM_LABELS` in the
-Cloudflare environment — the vault does not exist there, and its absence is what makes
-the build fall back to the committed labels. So a label only goes live once
-`src/data/labels.json` is committed and pushed.
+Cloudflare Pages, connected to this repo. Build command `npm run build`, output directory
+`dist`, Node 22 (read from `.nvmrc`).
+
+Do **not** set `ALBUM_LABELS` in the Cloudflare environment — the vault does not exist
+there, and its absence is what makes the build fall back to `src/data/labels.json`. So
+publishing new labels means committing that file:
+
+```powershell
+npm run build     # reads the vault, rewrites src/data/labels.json
+git add -A
+git commit -m "labels"
+git push          # Cloudflare builds and deploys
+```
+
+`data/albums.json` is committed too — it holds the titles, cover URLs and cover colours
+the page needs, and none of it is secret. `.env` and `.spotify-token.json` are ignored;
+check that before the first push.
+
+**Custom domain.** In the Pages project, *Custom domains* → add the subdomain. If the
+zone is on Cloudflare the DNS record is created for you. If it is not — bramdelisse.me
+is still on Hostinger at the time of writing — Cloudflare gives you a target and you add
+the record at your registrar yourself:
+
+```
+CNAME   albums   album-shelf.pages.dev
+```
+
+The certificate is issued once the record resolves, which is usually minutes.
+
+**One thing that cannot be changed later:** a Pages project is either Git-connected or
+Direct Upload, and it cannot be switched. `npx wrangler pages deploy dist` is quicker for
+a first look, but it makes the project Direct Upload for good. Connecting the repo is
+worth the few extra clicks, because after that publishing is just `git push`.
 
 ## What is not here
 

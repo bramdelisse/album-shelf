@@ -17,7 +17,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
     <title>albums — bram delisse</title>
     <meta
       name="description"
-      content="Mijn albums, geplaatst op energie en aandacht. Wijs een plek aan."
+      content="Mijn albumcollectie, georganiseerd op aandacht en energie, elk met een bijpassende kleur."
     />
     <meta name="theme-color" content="#FCFCFA" />
   </head>
@@ -27,8 +27,9 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
       <header>
         <h1><span class="marker">albums</span></h1>
         <p class="lede">
-          Elk album staat op zijn eigen plek. Wijs er een aan en kijk wat daar staat.
+          Welkom bij mijn album collectie. De albums staan georganiseerd op aandacht en energie en hebben een bijpassende kleur. Exploreer, en veel luisterplezier!
         </p>
+        <p class="lede sub">Wijs een stip aan om het album te zien. Klikken opent het in Spotify.</p>
       </header>
 
       <div class="layout">
@@ -53,13 +54,14 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
                     data-year={a.year}
                     data-cover={a.cover}
                     data-gem={a.gem ? '1' : ''}
+                    data-review={a.review ?? ''}
                     aria-label={`${a.artist} — ${a.album}`}
                   />
                 ))
               }
             </div>
 
-            <span class="tick bottom">achtergrond</span>
+            <span class="tick bottom">je vergeet dat het aanstaat</span>
           </div>
 
           <div class="axis-x">
@@ -103,7 +105,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
           <p class="artist" id="artist">—</p>
           <p class="album" id="album">Wijs een stip aan.</p>
           <p class="year" id="year"></p>
-          <p class="hint">Klikken opent het album in Spotify.</p>
+          <p class="review" id="review"></p>
         </aside>
       </div>
 
@@ -121,6 +123,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         artist: document.getElementById('artist'),
         album: document.getElementById('album'),
         year: document.getElementById('year'),
+        review: document.getElementById('review'),
         cover: document.getElementById('cover'),
       };
 
@@ -129,6 +132,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         fields.artist.textContent = dot.dataset.artist;
         fields.album.textContent = dot.dataset.album;
         fields.year.textContent = dot.dataset.year || '';
+        fields.review.textContent = dot.dataset.review || '';
         fields.cover.style.backgroundImage = dot.dataset.cover
           ? `url("${dot.dataset.cover}")`
           : 'none';
@@ -187,8 +191,21 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
 
       .lede {
         margin: 0.75rem 0 0;
-        max-width: 40ch;
+        max-width: 46ch;
         color: rgba(22, 24, 28, 0.72);
+      }
+
+      .lede.sub {
+        font-size: 0.9rem;
+        color: rgba(22, 24, 28, 0.5);
+      }
+
+      .review {
+        margin: 0.55rem 0 0;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        font-style: italic;
+        color: rgba(22, 24, 28, 0.78);
       }
 
       .layout {
@@ -376,7 +393,20 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         .tick {
           font-size: 0.68rem;
         }
-        .layout {
+        .lede.sub {
+        font-size: 0.9rem;
+        color: rgba(22, 24, 28, 0.5);
+      }
+
+      .review {
+        margin: 0.55rem 0 0;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        font-style: italic;
+        color: rgba(22, 24, 28, 0.78);
+      }
+
+      .layout {
           gap: 1.75rem;
         }
         .panel {

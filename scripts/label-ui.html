@@ -78,6 +78,7 @@
       }
       .ends { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.72rem; color: var(--soft); margin-top: 0.3rem; }
 
+      .review-input { width: 100%; }
       .suggest { display: flex; align-items: center; gap: 0.5rem; margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--soft); }
       .swatches { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.6rem; }
       .swatch { width: 1.35rem; height: 1.35rem; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22); padding: 0; }
@@ -222,7 +223,7 @@
                 <input type="number" id="attention" min="0" max="100" step="1" />
                 <input type="range" id="attentionRange" min="0" max="100" step="1" />
               </div>
-              <div class="ends"><span>achtergrond</span><span>eist alle aandacht</span></div>
+              <div class="ends"><span>je vergeet dat het aanstaat</span><span>eist alle aandacht</span></div>
             </div>
 
             <div class="field">
@@ -243,6 +244,12 @@
               <button type="button" class="gem" id="gem" aria-pressed="false">
                 <span class="stone">◆</span> <span id="gemText">markeer als gem</span>
               </button>
+            </div>
+
+            <div class="field">
+              <label for="review">één zin — optioneel</label>
+              <input type="text" id="review" class="review-input" maxlength="240"
+                     placeholder="Wat je eronder zou lezen in de collectie." spellcheck="true" />
             </div>
 
             <div class="field">
@@ -285,7 +292,7 @@
             <div class="plane-rows">
               <span class="tick">eist alle aandacht</span>
               <div class="big-plane" id="bigPlane"></div>
-              <span class="tick">achtergrond</span>
+              <span class="tick">je vergeet dat het aanstaat</span>
             </div>
             <div class="axis-x">
               <span class="tick">brengt je in slaap</span>
@@ -344,6 +351,7 @@
         if (!res.ok) throw new Error(out.error || 'opslaan mislukt');
         labels[body.id] = { energy: body.energy, attention: body.attention, colour: body.colour };
         if (body.gem) labels[body.id].gem = true;
+        if (body.review) labels[body.id].review = body.review;
         dates[body.id] = out.labelled;
         return out;
       }
@@ -454,6 +462,7 @@
         }
         setColour(existing ? existing.colour : suggested || lastColour);
         setGem(Boolean(existing && existing.gem));
+        $('review').value = (existing && existing.review) || '';
 
         drawSwatches();
         drawPlane(a);
@@ -473,6 +482,7 @@
             attention: clamp($('attention').value),
             colour: $('colour').value.toLowerCase(),
             gem: isGem(),
+            review: $('review').value.trim(),
           });
           lastColour = $('colour').value.toLowerCase();
           $('saved').textContent = `laatst opgeslagen: ${a.album}`;
@@ -632,7 +642,16 @@
           switchView('label');
         };
 
-        $('selBox').append(cover, artist, album, meta, open);
+        const nodes = [cover, artist, album];
+        if (l.review) {
+          const rev = document.createElement('p');
+          rev.className = 'stamp';
+          rev.style.fontStyle = 'italic';
+          rev.textContent = l.review;
+          nodes.push(rev);
+        }
+        nodes.push(meta, open);
+        $('selBox').append(...nodes);
       }
 
       let drag = null;
@@ -673,6 +692,7 @@
             attention: d.attention,
             colour: before.colour,
             gem: Boolean(before.gem),
+            review: before.review ?? '',
           });
           styleDot(d.dot, d.id, labels[d.id]); // freshly judged, so it recedes
           showSelected(d.id);

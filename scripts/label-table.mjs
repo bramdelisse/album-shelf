@@ -11,7 +11,7 @@ export const SKIP_START = '<!-- skipped:start -->';
 export const SKIP_END = '<!-- skipped:end -->';
 
 export const COLUMNS = [
-  'artist', 'album', 'year', 'energy', 'attention', 'colour', 'gem', 'labelled', 'id',
+  'artist', 'album', 'year', 'energy', 'attention', 'colour', 'gem', 'review', 'labelled', 'id',
 ];
 
 /** `gem` is a hand-typeable flag, so accept the obvious spellings. */
@@ -116,6 +116,8 @@ export function rowsToLabels(rows) {
     }
     labels[row.id] = { energy, attention, colour: colour.toLowerCase() };
     if (isGem(row.gem)) labels[row.id].gem = true;
+    const review = (row.review ?? '').trim();
+    if (review) labels[row.id].review = review;
   }
   return { labels, rejected };
 }

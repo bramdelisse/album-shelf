@@ -63,7 +63,7 @@ const readBody = (req) =>
   });
 
 /** Write one album's labels into the vault table, then refresh labels.json. */
-async function saveLabel({ id, energy, attention, colour, gem }) {
+async function saveLabel({ id, energy, attention, colour, gem, review }) {
   const text = await readFile(labelPath, 'utf8');
   const rows = parseTable(text);
 
@@ -74,6 +74,7 @@ async function saveLabel({ id, energy, attention, colour, gem }) {
   row.attention = String(attention);
   row.colour = String(colour).toLowerCase();
   row.gem = gem ? 'x' : '';
+  row.review = (review ?? '').trim();
   row.labelled = today();
 
   await writeFile(labelPath, replaceBlock(text, renderTable(rows)));

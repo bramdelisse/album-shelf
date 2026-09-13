@@ -39,6 +39,7 @@ Drie assen, alle drie met de hand:
 
 Een album zonder alle drie de labels staat niet op de plank. \`gem\` is een \`x\` voor
 mijn parels — dat zie je niet in het overzicht, alleen als je het album opent.
+\`review\` is één zin die onder het album komt te staan; mag leeg blijven.
 \`labelled\` is de datum waarop ik het label voor het laatst zette. \`artist\`, \`album\`,
 \`year\` en \`id\` worden door \`npm run import\` geschreven — die hoef je niet aan te raken.
 
@@ -193,6 +194,7 @@ async function main() {
         attention: previous?.attention ?? '',
         colour: previous?.colour ?? '',
         gem: previous?.gem ?? '',
+        review: previous?.review ?? '',
         labelled: previous?.labelled ?? '',
         id: a.id,
       };
