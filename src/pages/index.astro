@@ -29,7 +29,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         <p class="lede">
           Welkom bij mijn album collectie. De albums staan georganiseerd op aandacht en energie en hebben een bijpassende kleur. Exploreer, en veel luisterplezier!
         </p>
-        <p class="lede sub">Wijs een stip aan om het album te zien. Klikken opent het in Spotify.</p>
+        <p class="lede sub">Wijs een stip aan om het album te zien.</p>
       </header>
 
       <div class="layout">
@@ -43,11 +43,9 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
               <div class="crosshair"></div>
               {
                 albums.map((a) => (
-                  <a
+                  <button
+                    type="button"
                     class="dot"
-                    href={a.url || '#'}
-                    target="_blank"
-                    rel="noopener"
                     style={`left:${a.energy}%;bottom:${a.attention}%;--dot:${a.colour}`}
                     data-artist={a.artist}
                     data-album={a.album}
@@ -55,6 +53,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
                     data-cover={a.cover}
                     data-gem={a.gem ? '1' : ''}
                     data-review={a.review ?? ''}
+                    data-url={a.url ?? ''}
                     aria-label={`${a.artist} — ${a.album}`}
                   />
                 ))
@@ -106,6 +105,9 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
           <p class="album" id="album">Wijs een stip aan.</p>
           <p class="year" id="year"></p>
           <p class="review" id="review"></p>
+          <a class="spotify" id="spotify" href="#" target="_blank" rel="noopener" hidden
+            >open in Spotify</a
+          >
         </aside>
       </div>
 
@@ -125,6 +127,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         year: document.getElementById('year'),
         review: document.getElementById('review'),
         cover: document.getElementById('cover'),
+        spotify: document.getElementById('spotify'),
       };
 
       function show(dot) {
@@ -140,6 +143,10 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         // A gem is only visible once you open the album, never on the plane.
         // classList, not .hidden: SVG elements have no hidden property.
         document.getElementById('gemSticker').classList.toggle('is-on', dot.dataset.gem === '1');
+        // Spotify lives here, under the album, and nowhere else. The dot itself
+        // does nothing on click — that gesture is reserved for zooming in later.
+        fields.spotify.href = dot.dataset.url || '#';
+        fields.spotify.hidden = !dot.dataset.url;
       }
 
       for (const dot of document.querySelectorAll('.dot')) {
@@ -159,6 +166,10 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
 
       * {
         box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
       }
 
       body {
@@ -283,12 +294,19 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         margin-top: 0.15rem;
       }
 
+      /* A button, not a link: pointing at it is the whole gesture. Clicking is
+         deliberately inert, so the plane can later zoom in on a neighbourhood. */
       .dot {
         position: absolute;
         width: 1.15rem;
         height: 1.15rem;
         margin: 0 0 -0.575rem -0.575rem;
+        padding: 0;
+        border: 0;
         border-radius: 50%;
+        appearance: none;
+        font: inherit;
+        cursor: default;
         background: var(--dot);
         /* A ring, so a near-white colour is still a dot and not a hole. */
         box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22);
@@ -370,6 +388,24 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         margin-top: 0.9rem;
       }
 
+      /* Quiet on purpose: the shelf is for choosing, Spotify is for playing. */
+      .spotify {
+        display: inline-block;
+        margin-top: 0.7rem;
+        font-size: 0.78rem;
+        letter-spacing: 0.02em;
+        color: rgba(22, 24, 28, 0.42);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(22, 24, 28, 0.18);
+      }
+
+      .spotify:hover,
+      .spotify:focus-visible {
+        color: rgba(22, 24, 28, 0.78);
+        border-bottom-color: rgba(22, 24, 28, 0.45);
+        outline: none;
+      }
+
       .is-empty .cover,
       .is-empty .artist,
       .is-empty .hint {
@@ -393,20 +429,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         .tick {
           font-size: 0.68rem;
         }
-        .lede.sub {
-        font-size: 0.9rem;
-        color: rgba(22, 24, 28, 0.5);
-      }
-
-      .review {
-        margin: 0.55rem 0 0;
-        font-size: 0.95rem;
-        line-height: 1.45;
-        font-style: italic;
-        color: rgba(22, 24, 28, 0.78);
-      }
-
-      .layout {
+        .layout {
           gap: 1.75rem;
         }
         .panel {
@@ -424,6 +447,10 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
           width: 2.7rem;
           top: -0.55rem;
           right: -0.65rem;
+        }
+        .spotify {
+          grid-column: 2;
+          justify-self: start;
         }
       }
     </style>

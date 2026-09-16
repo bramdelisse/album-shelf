@@ -120,5 +120,15 @@
     "attention": 50,
     "colour": "#e4e2df",
     "gem": true
+  },
+  "3HPbRp0SmTJwWEKYoaIj9l": {
+    "energy": 95,
+    "attention": 80,
+    "colour": "#9e0000"
+  },
+  "4zJZSEWl2e2wBKTLSEAPbe": {
+    "energy": 70,
+    "attention": 50,
+    "colour": "#e2a34a"
   }
 }
