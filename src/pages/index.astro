@@ -1,10 +1,26 @@
 ---
 import catalogue from '../../data/albums.json';
 import labels from '../data/labels.json';
+import { GENRES, OTHER } from '../../scripts/genre.mjs';
 
 const albums = catalogue
   .filter((a) => labels[a.id])
   .map((a) => ({ ...a, ...labels[a.id] }));
+
+// Genre is set by machine (npm run genres, into the label table), states by
+// hand. Each list only shows when something on the shelf has one, so the page
+// works without either.
+const hasGenres = albums.some((a) => a.genre);
+const genreOf = (a) => a.genre ?? OTHER;
+const genres = [...GENRES.map((g) => g.name), OTHER]
+  .map((name) => ({ name, count: albums.filter((a) => genreOf(a) === name).length }))
+  .filter((g) => hasGenres && g.count > 0);
+
+const stateCount = new Map();
+for (const a of albums) for (const s of a.states ?? []) stateCount.set(s, (stateCount.get(s) ?? 0) + 1);
+const states = [...stateCount]
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'nl'))
+  .map(([name, count]) => ({ name, count }));
 
 const unlabelled = catalogue.length - albums.length;
 const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
@@ -54,6 +70,8 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
                     data-gem={a.gem ? '1' : ''}
                     data-review={a.review ?? ''}
                     data-url={a.url ?? ''}
+                    data-genre={hasGenres ? genreOf(a) : ''}
+                    data-states={(a.states ?? []).join(',')}
                     aria-label={`${a.artist} — ${a.album}`}
                   />
                 ))
@@ -70,6 +88,7 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
           </div>
         </div>
 
+        <div class="side">
         <aside id="panel" class="panel is-empty">
           <div class="cover-wrap">
             <div class="cover" id="cover"></div>
@@ -109,12 +128,51 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
             >open in Spotify</a
           >
         </aside>
+
+        {
+          (states.length > 0 || genres.length > 0) && (
+            <div class="filters">
+              {states.length > 0 && (
+                <fieldset class="filter" id="stateFilter">
+                  <legend>states</legend>
+                  <div class="chips">
+                    {states.map((s) => (
+                      <button type="button" class="chip" aria-pressed="false" data-state={s.name}>
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              {genres.length > 0 && (
+                <fieldset class="filter" id="genreFilter">
+                  <legend>genre</legend>
+                  <ul class="genres">
+                    {genres.map((g) => (
+                      <li>
+                        <label>
+                          <input type="checkbox" value={g.name} checked />
+                          <span>{g.name}</span>
+                          <span class="n">{g.count}</span>
+                        </label>
+                        <button type="button" class="only" data-only={g.name}>alleen</button>
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" class="all" id="genreAll" hidden>alles tonen</button>
+                </fieldset>
+              )}
+            </div>
+          )
+        }
+        </div>
       </div>
 
       <footer>
         <p>
           {albums.length} gelabeld{unlabelled > 0 && <> · {unlabelled} nog niet</>}
           {isSample && <> · <em>voorbeelddata</em></>}
+          <span id="visible"></span>
         </p>
       </footer>
     </main>
@@ -149,10 +207,60 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         fields.spotify.hidden = !dot.dataset.url;
       }
 
-      for (const dot of document.querySelectorAll('.dot')) {
+      const dots = [...document.querySelectorAll('.dot')];
+      for (const dot of dots) {
         dot.addEventListener('pointerenter', () => show(dot));
         dot.addEventListener('focus', () => show(dot));
       }
+
+      // Filters narrow the plane; they never rearrange it. An album that does
+      // not match stays where it is, greyed out and inert, so you still see
+      // where the rest of the shelf sits. Every genre starts ticked and no state
+      // starts pressed — so by default everything is lit.
+      const genreBoxes = [...document.querySelectorAll('#genreFilter input')];
+      const stateChips = [...document.querySelectorAll('#stateFilter .chip')];
+      const genreAll = document.getElementById('genreAll');
+      const visible = document.getElementById('visible');
+
+      function applyFilters() {
+        const genres = new Set(genreBoxes.filter((b) => b.checked).map((b) => b.value));
+        const states = stateChips
+          .filter((c) => c.getAttribute('aria-pressed') === 'true')
+          .map((c) => c.dataset.state);
+        let shown = 0;
+        for (const dot of dots) {
+          const own = dot.dataset.states ? dot.dataset.states.split(',') : [];
+          const on =
+            (genreBoxes.length === 0 || genres.has(dot.dataset.genre)) &&
+            (states.length === 0 || states.some((s) => own.includes(s)));
+          dot.classList.toggle('is-off', !on);
+          // Out of the tab order too, not only out of reach of the pointer.
+          dot.tabIndex = on ? 0 : -1;
+          dot.setAttribute('aria-hidden', on ? 'false' : 'true');
+          if (on) shown++;
+        }
+        visible.textContent = shown === dots.length ? '' : ` · ${shown} geselecteerd`;
+        if (genreAll) genreAll.hidden = genreBoxes.every((b) => b.checked);
+      }
+
+      for (const box of genreBoxes) box.addEventListener('change', applyFilters);
+      for (const chip of stateChips) {
+        chip.addEventListener('click', () => {
+          const on = chip.getAttribute('aria-pressed') !== 'true';
+          chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+          applyFilters();
+        });
+      }
+      for (const only of document.querySelectorAll('#genreFilter .only')) {
+        only.addEventListener('click', () => {
+          for (const box of genreBoxes) box.checked = box.value === only.dataset.only;
+          applyFilters();
+        });
+      }
+      genreAll?.addEventListener('click', () => {
+        for (const box of genreBoxes) box.checked = true;
+        applyFilters();
+      });
     </script>
 
     <style>
@@ -310,7 +418,18 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         background: var(--dot);
         /* A ring, so a near-white colour is still a dot and not a hole. */
         box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22);
-        transition: transform 0.12s ease;
+        z-index: 1;
+        transition:
+          transform 0.12s ease,
+          background-color 0.2s ease;
+      }
+
+      /* Not matching the filters: still on the map, but grey and untouchable. */
+      .dot.is-off {
+        background: rgba(22, 24, 28, 0.1);
+        box-shadow: none;
+        pointer-events: none;
+        z-index: 0;
       }
 
       .dot:hover,
@@ -323,8 +442,12 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         z-index: 2;
       }
 
-      .panel {
+      .side {
         flex: 0 1 15rem;
+        min-width: 0;
+      }
+
+      .panel {
         /* Neutral, so that on this page yellow means exactly one thing: a gem. */
         border-top: 1px solid var(--rule);
         padding-top: 1rem;
@@ -412,6 +535,133 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         opacity: 0.35;
       }
 
+      /* ------------------------------ filters ------------------------------ */
+
+      .filters {
+        margin-top: 2rem;
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .filter {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+      }
+
+      .filter legend {
+        padding: 0;
+        margin-bottom: 0.5rem;
+        font-size: 0.72rem;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: rgba(22, 24, 28, 0.5);
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+
+      /* Pressed is ink, not yellow: on this page yellow means a gem. */
+      .chip {
+        font: inherit;
+        font-size: 0.82rem;
+        padding: 0.15rem 0.65rem;
+        border: 1px solid var(--rule);
+        border-radius: 999px;
+        background: transparent;
+        color: rgba(22, 24, 28, 0.72);
+        cursor: pointer;
+      }
+
+      .chip:hover {
+        color: var(--ink);
+        border-color: rgba(22, 24, 28, 0.35);
+      }
+
+      .chip[aria-pressed='true'] {
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--paper);
+      }
+
+      .genres {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: 0.85rem;
+      }
+
+      .genres li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .genres label {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.1rem 0;
+        cursor: pointer;
+      }
+
+      .genres input {
+        margin: 0;
+        accent-color: var(--ink);
+      }
+
+      .genres .n {
+        font-size: 0.75rem;
+        color: rgba(22, 24, 28, 0.42);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .only,
+      .all {
+        font: inherit;
+        font-size: 0.72rem;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: rgba(22, 24, 28, 0.42);
+        cursor: pointer;
+        border-bottom: 1px solid transparent;
+      }
+
+      /* "alleen" waits in the margin until you point at the row. */
+      .only {
+        opacity: 0;
+      }
+
+      .genres li:hover .only,
+      .only:focus-visible {
+        opacity: 1;
+      }
+
+      .only:hover,
+      .all:hover,
+      .only:focus-visible,
+      .all:focus-visible {
+        color: var(--ink);
+        border-bottom-color: rgba(22, 24, 28, 0.45);
+        outline: none;
+      }
+
+      .all {
+        margin-top: 0.5rem;
+      }
+
+      @media (hover: none) {
+        .only {
+          opacity: 1;
+        }
+      }
+
       footer {
         margin-top: 3rem;
         font-size: 0.82rem;
@@ -432,8 +682,10 @@ const isSample = catalogue.some((a) => String(a.id).startsWith('sample-'));
         .layout {
           gap: 1.75rem;
         }
-        .panel {
+        .side {
           flex-basis: 100%;
+        }
+        .panel {
           display: grid;
           grid-template-columns: 5rem 1fr;
           gap: 0 1rem;

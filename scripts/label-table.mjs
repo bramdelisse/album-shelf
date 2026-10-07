@@ -11,11 +11,24 @@ export const SKIP_START = '<!-- skipped:start -->';
 export const SKIP_END = '<!-- skipped:end -->';
 
 export const COLUMNS = [
-  'artist', 'album', 'year', 'energy', 'attention', 'colour', 'gem', 'review', 'labelled', 'id',
+  'artist', 'album', 'year', 'genre', 'energy', 'attention', 'colour', 'gem', 'states', 'review', 'labelled', 'id',
 ];
 
 /** `gem` is a hand-typeable flag, so accept the obvious spellings. */
 export const isGem = (v) => /^(x|y|yes|ja|true|1|★)$/i.test(String(v ?? '').trim());
+
+/**
+ * `states` is a comma-separated list typed by hand — "eros, confidence".
+ * Lowercased and de-duplicated, so "Eros" and "eros" are the same state.
+ */
+export const parseStates = (v) => [
+  ...new Set(
+    String(v ?? '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean),
+  ),
+];
 
 /** Today, as YYYY-MM-DD in local time. */
 export const today = () => new Date().toLocaleDateString('sv-SE');
@@ -90,7 +103,7 @@ export function renderTable(rows) {
 }
 
 /**
- * Turn parsed rows into the { id: {energy, attention, colour} } map the site reads.
+ * Turn parsed rows into the { id: {energy, attention, colour, …} } map the site reads.
  * A row with nothing filled in is simply not labelled yet. A row with something
  * wrong in it is reported, not silently dropped and not fatal.
  */
@@ -116,6 +129,10 @@ export function rowsToLabels(rows) {
     }
     labels[row.id] = { energy, attention, colour: colour.toLowerCase() };
     if (isGem(row.gem)) labels[row.id].gem = true;
+    const genre = (row.genre ?? '').trim().toLowerCase();
+    if (genre) labels[row.id].genre = genre;
+    const states = parseStates(row.states);
+    if (states.length) labels[row.id].states = states;
     const review = (row.review ?? '').trim();
     if (review) labels[row.id].review = review;
   }

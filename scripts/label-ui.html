@@ -78,7 +78,14 @@
       }
       .ends { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.72rem; color: var(--soft); margin-top: 0.3rem; }
 
-      .review-input { width: 100%; }
+      input.review-input, input.states-input { width: 100%; }
+      .state-chips { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+      .state-chip {
+        font: inherit; font-size: 0.8rem; padding: 0.1rem 0.6rem; border-radius: 999px;
+        border: 1px solid var(--rule); background: transparent; color: var(--soft);
+      }
+      .state-chip:hover { color: var(--ink); }
+      .state-chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
       .suggest { display: flex; align-items: center; gap: 0.5rem; margin: 0.6rem 0 0; font-size: 0.8rem; color: var(--soft); }
       .swatches { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.6rem; }
       .swatch { width: 1.35rem; height: 1.35rem; border-radius: 50%; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(22, 24, 28, 0.22); padding: 0; }
@@ -247,6 +254,13 @@
             </div>
 
             <div class="field">
+              <label for="states">states — optioneel</label>
+              <input type="text" id="states" class="states-input" spellcheck="false"
+                     placeholder="eros, confidence" />
+              <div class="state-chips" id="stateChips"></div>
+            </div>
+
+            <div class="field">
               <label for="review">één zin — optioneel</label>
               <input type="text" id="review" class="review-input" maxlength="240"
                      placeholder="Wat je eronder zou lezen in de collectie." spellcheck="true" />
@@ -352,6 +366,7 @@
         labels[body.id] = { energy: body.energy, attention: body.attention, colour: body.colour };
         if (body.gem) labels[body.id].gem = true;
         if (body.review) labels[body.id].review = body.review;
+        if (body.states && body.states.length) labels[body.id].states = body.states;
         dates[body.id] = out.labelled;
         return out;
       }
@@ -413,6 +428,38 @@
       }
       const isGem = () => $('gem').getAttribute('aria-pressed') === 'true';
 
+      /* States are personal and few, so the ones already in use are offered as
+         chips; a new one is simply typed. The text field is the truth. */
+      const parseStates = (v) => [
+        ...new Set(String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)),
+      ];
+
+      function knownStates() {
+        const seen = new Set();
+        for (const l of Object.values(labels)) for (const s of l.states || []) seen.add(s);
+        for (const s of parseStates($('states').value)) seen.add(s);
+        return [...seen].sort((a, b) => a.localeCompare(b, 'nl'));
+      }
+
+      function drawStateChips() {
+        const on = new Set(parseStates($('states').value));
+        $('stateChips').innerHTML = '';
+        for (const s of knownStates()) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'state-chip';
+          b.textContent = s;
+          b.setAttribute('aria-pressed', on.has(s) ? 'true' : 'false');
+          b.onclick = () => {
+            const now = parseStates($('states').value);
+            const next = now.includes(s) ? now.filter((x) => x !== s) : [...now, s];
+            $('states').value = next.join(', ');
+            drawStateChips();
+          };
+          $('stateChips').append(b);
+        }
+      }
+
       function setColour(c) {
         $('colour').value = c;
         $('hex').value = c;
@@ -463,6 +510,8 @@
         setColour(existing ? existing.colour : suggested || lastColour);
         setGem(Boolean(existing && existing.gem));
         $('review').value = (existing && existing.review) || '';
+        $('states').value = ((existing && existing.states) || []).join(', ');
+        drawStateChips();
 
         drawSwatches();
         drawPlane(a);
@@ -482,6 +531,7 @@
             attention: clamp($('attention').value),
             colour: $('colour').value.toLowerCase(),
             gem: isGem(),
+            states: parseStates($('states').value),
             review: $('review').value.trim(),
           });
           lastColour = $('colour').value.toLowerCase();
@@ -552,6 +602,9 @@
         if (/^#[0-9a-f]{6}$/i.test(v)) setColour(v.toLowerCase());
         else $('hex').value = $('colour').value;
       });
+
+      $('states').addEventListener('change', drawStateChips);
+      $('states').addEventListener('input', (ev) => { if (ev.data === ',') drawStateChips(); });
 
       $('gem').onclick = () => setGem(!isGem());
       $('save').onclick = save;
@@ -692,6 +745,7 @@
             attention: d.attention,
             colour: before.colour,
             gem: Boolean(before.gem),
+            states: before.states || [],
             review: before.review ?? '',
           });
           styleDot(d.dot, d.id, labels[d.id]); // freshly judged, so it recedes

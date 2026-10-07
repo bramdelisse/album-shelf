@@ -15,6 +15,8 @@ You point at a region — low energy, background — and the albums are there.
 | **attention** | 0–100 | From *je vergeet dat het aanstaat* up to *eist alle aandacht*. |
 | **colour** | any hex | How it feels. No palette, no list — a free choice, suggested from the cover. |
 | **gem** | `x` or blank | One of the twenty-odd albums that really matter. |
+| **genre** | one word | The exception: set by `npm run genres` from Spotify, not by hand. See below. |
+| **states** | comma-separated | Optional and personal — *eros*, *confidence*. What you put on for a state you want to be in. |
 | **review** | one sentence | Optional. Shown under the album, the way a note under a record sleeve reads. |
 | **labelled** | date | When the judgement was last made. |
 
@@ -33,6 +35,36 @@ labelled by a machine tells you what a machine thinks, and then it is not your s
 
 An album needs all three labels before it appears. Unlabelled albums are counted, not shown.
 
+## Genre and states: narrowing the plane
+
+Beside the plane sit two lists that narrow it down. Neither moves a dot: an album
+that does not match stays where it is, greyed out and inert, so you still see where
+the rest of the shelf lies. Both start out with everything lit.
+
+**Genre** is the one label not set by hand. A genre is a general agreement rather
+than an opinion — that is what makes it useful to someone browsing a collection that
+is not theirs — so it comes from Spotify. `npm run genres` asks Spotify for each
+artist's genres, which are fine-grained (*dutch hip hop*, *indie folk*), and maps
+them onto about a dozen broad groups; the list and its order live in
+`scripts/genre.mjs`. The group that comes up most across an album's artists is the
+album's genre. An album whose artists have no genre Spotify knows of is *overig*.
+Every genre starts ticked. Untick to leave one out, or *alleen* to show only that one.
+
+The genre goes into the `genre` column of the label table, next to the labels, and
+only into empty cells: if Spotify gets one wrong, type the right one over it and it
+stays. The raw Spotify genres are cached on each album in `data/albums.json` as
+`spotifyGenres`, so changing the mapping needs no new requests — edit `GENRES` and
+run `npm run genres -- --remap`, which rewrites every cell, hand edits included.
+`npm run import` fills the genre of new albums by itself.
+
+**States** are the opposite: personal, several per album if you like, typed by hand
+in the labelling page and stored in the `states` column as a comma-separated list.
+On the shelf they are buttons. None pressed lights everything; pressing one or more
+lights the albums that carry any of them.
+
+Either list only appears once something on the shelf has a genre or a state, so the
+page works before `npm run genres` has ever run.
+
 ## How the data moves
 
 Two files, two owners, joined on the Spotify album ID.
@@ -40,7 +72,8 @@ Two files, two owners, joined on the Spotify album ID.
 ```
 Spotify  --npm run import-->  data/albums.json      machine-owned: artist, title, year, cover, link
                         \
-                         `-> <vault>/albums.md      human-owned: energy, attention, colour
+                         `-> <vault>/albums.md      human-owned: energy, attention, colour, states
+                                                           (+ genre, filled by npm run genres)
                                     |
                              npm run sync
                                     |
@@ -94,6 +127,7 @@ copy .env.example .env      # then fill in SPOTIFY_CLIENT_ID and ALBUM_LABELS
 ```powershell
 npm run import   # browser login the first time, then writes albums.md
 npm run colours  # reads a suggested colour off every cover
+npm run genres   # a broad genre per album, from Spotify
 npm run label    # http://127.0.0.1:8899 — one album at a time
 npm run dev      # http://localhost:4321
 ```
@@ -156,6 +190,7 @@ import. To undo, delete the row from that table by hand.
 | --- | --- |
 | `npm run import` | Pulls saved albums from Spotify, rewrites `data/albums.json`, adds new blank rows to the label table |
 | `npm run colours` | Reads the dominant colour off each cover into `data/albums.json`; skips covers it already knows. `-- --force` redoes them all |
+| `npm run genres` | Fetches artist genres from Spotify (cached in `data/albums.json`) and writes a broad genre into every empty `genre` cell of the label table. `-- --remap` rewrites all cells from the cache, `-- --force` asks Spotify again first |
 | `npm run label` | Local labelling page on `:8899`, writes straight to the vault |
 | `npm run sync` | Reads the label table into `src/data/labels.json` |
 | `npm run dev` | `sync`, then dev server on `:4321` |

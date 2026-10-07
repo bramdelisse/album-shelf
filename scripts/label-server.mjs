@@ -15,6 +15,7 @@ import {
   SKIP_END,
   SKIP_START,
   ensureBlock,
+  parseStates,
   parseTable,
   renderTable,
   replaceBlock,
@@ -63,7 +64,7 @@ const readBody = (req) =>
   });
 
 /** Write one album's labels into the vault table, then refresh labels.json. */
-async function saveLabel({ id, energy, attention, colour, gem, review }) {
+async function saveLabel({ id, energy, attention, colour, gem, review, states }) {
   const text = await readFile(labelPath, 'utf8');
   const rows = parseTable(text);
 
@@ -75,6 +76,11 @@ async function saveLabel({ id, energy, attention, colour, gem, review }) {
   row.colour = String(colour).toLowerCase();
   row.gem = gem ? 'x' : '';
   row.review = (review ?? '').trim();
+  // Only touch states when the page sent them, so a save that does not know
+  // about states (an older tab, say) cannot wipe the ones already typed.
+  if (states !== undefined) {
+    row.states = parseStates(Array.isArray(states) ? states.join(',') : states).join(', ');
+  }
   row.labelled = today();
 
   await writeFile(labelPath, replaceBlock(text, renderTable(rows)));

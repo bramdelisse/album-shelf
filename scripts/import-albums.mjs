@@ -9,6 +9,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { getAccessToken } from './spotify-auth.mjs';
 import { fillCoverColours, needsColour } from './cover-colour.mjs';
+import { albumGenre, fillGenres, needsGenres } from './genre.mjs';
 import {
   COLUMNS,
   GONE_END,
@@ -39,6 +40,8 @@ Drie assen, alle drie met de hand:
 
 Een album zonder alle drie de labels staat niet op de plank. \`gem\` is een \`x\` voor
 mijn parels — dat zie je niet in het overzicht, alleen als je het album opent.
+\`genre\` zet \`npm run genres\` erin, vanuit Spotify; een genre dat ik zelf typ blijft staan.
+\`states\` is een kommalijst die ik zelf kies — *eros, confidence*; mag leeg blijven.
 \`review\` is één zin die onder het album komt te staan; mag leeg blijven.
 \`labelled\` is de datum waarop ik het label voor het laatst zette. \`artist\`, \`album\`,
 \`year\` en \`id\` worden door \`npm run import\` geschreven — die hoef je niet aan te raken.
@@ -101,6 +104,7 @@ async function fetchSavedAlbums(token) {
       albums.push({
         id: a.id,
         artist: a.artists.map((x) => x.name).join(', '),
+        artistIds: a.artists.map((x) => x.id),
         album: a.name,
         year: (a.release_date ?? '').slice(0, 4),
         cover: a.images?.sort((x, y) => x.width - y.width).find((i) => i.width >= 300)?.url
@@ -149,7 +153,21 @@ async function main() {
         a.coverSource = old.coverSource;
         a.colourAlgo = old.colourAlgo;
       }
+      if (Array.isArray(old?.spotifyGenres)) a.spotifyGenres = old.spotifyGenres;
     }
+  }
+
+  // Genres for albums that are new since the last import. Nice to have, so a
+  // failure here is a warning and not a reason to lose the import.
+  const newForGenres = spotifyAlbums.filter(needsGenres).length;
+  try {
+    if (newForGenres) console.log(`Fetching genres for ${newForGenres} albums…`);
+    await fillGenres(spotifyAlbums, token, {
+      onProgress: (n, total) => process.stdout.write(`\r  artist ${n}/${total}`),
+    });
+    if (newForGenres) process.stdout.write('\n');
+  } catch (err) {
+    console.log(`\nCould not fetch genres (${err.message}). Run npm run genres later.`);
   }
 
   const toRead = spotifyAlbums.filter((a) => a.cover && needsColour(a)).length;
@@ -190,10 +208,13 @@ async function main() {
         artist: a.artist,
         album: a.album,
         year: a.year,
+        // A genre already in the table stays, whether Spotify or I put it there.
+        genre: previous?.genre || (a.spotifyGenres ? albumGenre(a.spotifyGenres) : ''),
         energy: previous?.energy ?? '',
         attention: previous?.attention ?? '',
         colour: previous?.colour ?? '',
         gem: previous?.gem ?? '',
+        states: previous?.states ?? '',
         review: previous?.review ?? '',
         labelled: previous?.labelled ?? '',
         id: a.id,
