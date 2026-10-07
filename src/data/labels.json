@@ -130,5 +130,132 @@
     "energy": 70,
     "attention": 50,
     "colour": "#e2a34a"
+  },
+  "3wRBlpk5PRoixwOnLujTal": {
+    "energy": 30,
+    "attention": 30,
+    "colour": "#555742",
+    "review": "title says it all"
+  },
+  "0KkHzH0uia9zwPbrCbS6NY": {
+    "energy": 75,
+    "attention": 60,
+    "colour": "#f5da0c",
+    "states": [
+      "chillen"
+    ],
+    "review": "Vrolijke dromerige high-energy trap hiphop"
+  },
+  "5B4zpYhcIOJXQO7YWBh0LE": {
+    "energy": 60,
+    "attention": 30,
+    "colour": "#a3927d",
+    "states": [
+      "chillen"
+    ],
+    "review": "Chill mumble hiphop voor de achtergrond"
+  },
+  "4H6NRX6bvkIJZIJdZSPq6Y": {
+    "energy": 50,
+    "attention": 95,
+    "colour": "#1d1933",
+    "gem": true,
+    "review": "Musical van de griekse mythe over Orpheus en Eurydice - samen met Bon Iver"
+  },
+  "7bCnK1yBuL4G5OHJP60c8u": {
+    "energy": 70,
+    "attention": 85,
+    "colour": "#254d7f",
+    "review": "happy game beats!"
+  },
+  "33Ek6daAL3oXyQIV1uoItD": {
+    "energy": 10,
+    "attention": 30,
+    "colour": "#8c5641",
+    "gem": true,
+    "review": "De helft van Outkast wilde een rap album maken maar een meditatie album is literally the way the wind blew him"
+  },
+  "4zVkAizREjamOAnvOqE3Du": {
+    "energy": 45,
+    "attention": 20,
+    "colour": "#adadad",
+    "review": "dreamy pop"
+  },
+  "4kL8YSMh7EzVU9L6k8Uauv": {
+    "energy": 20,
+    "attention": 80,
+    "colour": "#adadad",
+    "review": "intieme verhaaltjes voor het slapengaan"
+  },
+  "7kGXsZHSwblgzytzITVbLg": {
+    "energy": 65,
+    "attention": 75,
+    "colour": "#0d3858",
+    "review": "een album over het leven van een jongvolwassen zillenial"
+  },
+  "3WpX3RxirW3Bdqaber0GEK": {
+    "energy": 80,
+    "attention": 30,
+    "colour": "#337ba9",
+    "review": "Dubstep! Lekker gamen!"
+  },
+  "3a0b6iJl830EdKhckSbvoy": {
+    "energy": 75,
+    "attention": 75,
+    "colour": "#578589",
+    "gem": true,
+    "review": "Monumentaal album in future bass"
+  },
+  "4aN2EaQB4G7z6BqcEClnMd": {
+    "energy": 75,
+    "attention": 50,
+    "colour": "#eebe11",
+    "states": [
+      "confidence"
+    ],
+    "review": "u gotta run"
+  },
+  "6aWB16Ri58NuFoUZZQAr9v": {
+    "energy": 80,
+    "attention": 60,
+    "colour": "#22282a",
+    "review": "voor als het net wat harder moet"
+  },
+  "2SZZihZiCsFo87NKxDfxlH": {
+    "energy": 20,
+    "attention": 20,
+    "colour": "#8e552f",
+    "gem": true,
+    "states": [
+      "ambient"
+    ],
+    "review": "meesterwerk binnen de ambient"
+  },
+  "7awVNBWo4UABSISGxh0Mkq": {
+    "energy": 50,
+    "attention": 25,
+    "colour": "#472317",
+    "review": "vrolijke electro pop"
+  },
+  "4fu1vGlLFL0UVFnqZh6OB1": {
+    "energy": 70,
+    "attention": 80,
+    "colour": "#3c3b0e",
+    "states": [
+      "confidence"
+    ],
+    "review": "the system is broken. FACK!"
+  },
+  "2JhwfAlE0cF7qprKutGfF8": {
+    "energy": 30,
+    "attention": 40,
+    "colour": "#2f563c",
+    "review": "het album waar ik Billie Eilish leerde kennen"
+  },
+  "4gjBvLPCLsVffoSyXHJ21K": {
+    "energy": 30,
+    "attention": 80,
+    "colour": "#afa971",
+    "review": "creepy John Frusciante side-project"
   }
 }
